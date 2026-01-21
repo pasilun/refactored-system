@@ -9,12 +9,12 @@ import base64
 from datetime import datetime, timedelta
 from collections import defaultdict
 from typing import List, Dict, Tuple
+from email.utils import parsedate_to_datetime
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from bs4 import BeautifulSoup
 from tabulate import tabulate
 
 # Gmail API scopes
@@ -214,7 +214,8 @@ class GmailUnsubscriber:
                             if (self.unsubscribe_data[normalized_link]["last_date"] is None or
                                 email_date > self.unsubscribe_data[normalized_link]["last_date"]):
                                 self.unsubscribe_data[normalized_link]["last_date"] = email_date
-                    except:
+                    except (ValueError, TypeError) as e:
+                        # Skip emails with unparseable dates
                         pass
             
             processed += 1
@@ -235,10 +236,9 @@ class GmailUnsubscriber:
 
     def _parse_email_date(self, date_str: str) -> datetime:
         """Parse email date string to datetime"""
-        from email.utils import parsedate_to_datetime
         try:
             return parsedate_to_datetime(date_str)
-        except:
+        except (ValueError, TypeError):
             return None
 
     def display_results(self):

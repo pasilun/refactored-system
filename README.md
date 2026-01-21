@@ -62,6 +62,11 @@ Run the tool:
 python gmail_unsubscriber.py
 ```
 
+Or, if you made it executable:
+```bash
+./gmail_unsubscriber.py
+```
+
 On first run:
 1. The tool will open your browser for OAuth authentication
 2. Sign in with your Gmail account

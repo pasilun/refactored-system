@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learn to Write</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4ff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      color: #3b4a6b;
+      margin-bottom: 28px;
+      letter-spacing: 0.5px;
+    }
+
+    #game {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(60,80,160,0.10);
+      padding: 36px 40px 32px;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    #image-area {
+      width: 320px;
+      height: 220px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #e8edf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: background 0.3s;
+    }
+
+    #image-area img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+      border-radius: 14px;
+    }
+
+    #image-area img.visible { display: block; }
+
+    #placeholder-icon {
+      font-size: 64px;
+      opacity: 0.25;
+      user-select: none;
+    }
+
+    #word-display {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: 6px;
+      color: #3b4a6b;
+      display: flex;
+      gap: 4px;
+    }
+
+    .letter {
+      display: inline-block;
+      transition: color 0.15s, transform 0.15s;
+      min-width: 1ch;
+    }
+    .letter.correct { color: #34c759; transform: scale(1.1); }
+    .letter.wrong   { color: #ff3b30; }
+    .letter.pending { color: #c5cde8; }
+
+    #input-area {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+
+    #type-input {
+      flex: 1;
+      font-size: 1.3rem;
+      padding: 10px 16px;
+      border: 2px solid #dde3f5;
+      border-radius: 12px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      color: #3b4a6b;
+      background: #f7f9ff;
+      letter-spacing: 3px;
+    }
+    #type-input:focus {
+      border-color: #6c8af5;
+      box-shadow: 0 0 0 3px rgba(108,138,245,0.15);
+    }
+
+    #next-btn {
+      background: #6c8af5;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+    #next-btn:hover { background: #4f6de0; }
+    #next-btn:active { transform: scale(0.96); }
+
+    #hint {
+      font-size: 0.85rem;
+      color: #8a97c0;
+      min-height: 20px;
+      text-align: center;
+    }
+
+    #progress {
+      display: flex;
+      gap: 8px;
+    }
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #dde3f5;
+      transition: background 0.3s;
+    }
+    .dot.done  { background: #34c759; }
+    .dot.active { background: #6c8af5; }
+
+    #success-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: rgba(52,199,89,0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    #success-overlay.show { opacity: 1; }
+
+    #custom-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      margin-top: -8px;
+    }
+    #custom-input {
+      flex: 1;
+      font-size: 0.95rem;
+      padding: 8px 12px;
+      border: 2px solid #dde3f5;
+      border-radius: 10px;
+      outline: none;
+      color: #3b4a6b;
+      background: #f7f9ff;
+      transition: border-color 0.2s;
+    }
+    #custom-input:focus { border-color: #6c8af5; }
+    #add-btn {
+      background: #e8edf8;
+      color: #3b4a6b;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #add-btn:hover { background: #dde3f5; }
+
+    #score {
+      font-size: 0.9rem;
+      color: #8a97c0;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Learn to Write</h1>
+
+<div id="game">
+  <div id="image-area">
+    <span id="placeholder-icon">🖼️</span>
+    <img id="word-image" alt="word image" />
+    <div id="success-overlay">✓</div>
+  </div>
+
+  <div id="word-display"></div>
+
+  <div id="input-area">
+    <input id="type-input" type="text" placeholder="type the word…" autocomplete="off" spellcheck="false" />
+    <button id="next-btn">Next →</button>
+  </div>
+
+  <div id="hint"></div>
+
+  <div id="custom-row">
+    <input id="custom-input" type="text" placeholder="add your own word…" autocomplete="off" spellcheck="false" maxlength="30" />
+    <button id="add-btn">+ Add</button>
+  </div>
+
+  <div id="progress"></div>
+  <div id="score"></div>
+</div>
+
+<script>
+  const WORDS = [
+    'cat', 'dog', 'sun', 'tree', 'bird',
+    'fish', 'apple', 'house', 'flower', 'rain',
+    'star', 'moon', 'book', 'boat', 'car',
+  ];
+
+  let words = [...WORDS];
+  let currentIndex = 0;
+  let completed = new Set();
+  let imageCache = {};
+  let imageDebounce = null;
+
+  const wordDisplay  = document.getElementById('word-display');
+  const typeInput    = document.getElementById('type-input');
+  const wordImage    = document.getElementById('word-image');
+  const placeholder  = document.getElementById('placeholder-icon');
+  const successOverlay = document.getElementById('success-overlay');
+  const hintEl       = document.getElementById('hint');
+  const progressEl   = document.getElementById('progress');
+  const scoreEl      = document.getElementById('score');
+  const customInput  = document.getElementById('custom-input');
+  const addBtn       = document.getElementById('add-btn');
+  const nextBtn      = document.getElementById('next-btn');
+
+  function currentWord() { return words[currentIndex]; }
+
+  function buildWordDisplay(typed) {
+    const word = currentWord();
+    wordDisplay.innerHTML = '';
+    for (let i = 0; i < word.length; i++) {
+      const span = document.createElement('span');
+      span.classList.add('letter');
+      span.textContent = word[i].toUpperCase();
+      if (i < typed.length) {
+        span.classList.add(typed[i].toLowerCase() === word[i].toLowerCase() ? 'correct' : 'wrong');
+      } else {
+        span.classList.add('pending');
+      }
+      wordDisplay.appendChild(span);
+    }
+  }
+
+  function buildProgress() {
+    progressEl.innerHTML = '';
+    words.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.classList.add('dot');
+      if (completed.has(i)) dot.classList.add('done');
+      else if (i === currentIndex) dot.classList.add('active');
+      progressEl.appendChild(dot);
+    });
+    const done = completed.size;
+    scoreEl.textContent = done > 0 ? `${done} / ${words.length} completed` : '';
+  }
+
+  function fetchImage(word) {
+    if (imageCache[word]) {
+      showImage(imageCache[word]);
+      return;
+    }
+    // LoremFlickr returns a random image matching the keyword — no API key needed
+    const url = `https://loremflickr.com/320/220/${encodeURIComponent(word)}?random=${Math.floor(Math.random()*1000)}`;
+    const img = new Image();
+    img.onload = () => {
+      imageCache[word] = url;
+      showImage(url);
+    };
+    img.onerror = () => { /* silently leave placeholder */ };
+    img.src = url;
+  }
+
+  function showImage(url) {
+    wordImage.src = url;
+    wordImage.classList.add('visible');
+    placeholder.style.display = 'none';
+  }
+
+  function hideImage() {
+    wordImage.classList.remove('visible');
+    wordImage.src = '';
+    placeholder.style.display = '';
+  }
+
+  function loadWord(index) {
+    currentIndex = index;
+    typeInput.value = '';
+    typeInput.disabled = false;
+    successOverlay.classList.remove('show');
+    hintEl.textContent = 'Start typing to reveal the image!';
+    hideImage();
+    buildWordDisplay('');
+    buildProgress();
+    typeInput.focus();
+  }
+
+  function handleSuccess() {
+    completed.add(currentIndex);
+    typeInput.disabled = true;
+    successOverlay.classList.add('show');
+    hintEl.textContent = '✓ Well done! Press Next to continue.';
+    buildProgress();
+
+    if (completed.size === words.length) {
+      hintEl.textContent = '🎉 You finished all words! Great job!';
+    }
+  }
+
+  typeInput.addEventListener('input', () => {
+    const typed = typeInput.value;
+    const word = currentWord();
+    buildWordDisplay(typed);
+
+    // Fetch image as soon as 2+ correct letters typed
+    const correctSoFar = [...typed].every((ch, i) => ch.toLowerCase() === word[i]?.toLowerCase());
+    if (correctSoFar && typed.length >= 2) {
+      clearTimeout(imageDebounce);
+      imageDebounce = setTimeout(() => fetchImage(word), 300);
+    } else if (!correctSoFar) {
+      hintEl.textContent = 'Oops — check your spelling!';
+    } else {
+      hintEl.textContent = 'Keep going…';
+    }
+
+    if (typed.toLowerCase() === word.toLowerCase()) {
+      clearTimeout(imageDebounce);
+      fetchImage(word);
+      setTimeout(handleSuccess, 300);
+    }
+  });
+
+  nextBtn.addEventListener('click', () => {
+    let next = (currentIndex + 1) % words.length;
+    // Skip already-completed words if any remain
+    const remaining = words.map((_, i) => i).filter(i => !completed.has(i));
+    if (remaining.length > 0 && !remaining.includes(next)) {
+      next = remaining[0];
+    }
+    loadWord(next);
+  });
+
+  addBtn.addEventListener('click', () => {
+    const val = customInput.value.trim().toLowerCase();
+    if (!val || words.includes(val)) {
+      customInput.value = '';
+      return;
+    }
+    words.push(val);
+    customInput.value = '';
+    buildProgress();
+    hintEl.textContent = `"${val}" added!`;
+  });
+
+  customInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') addBtn.click();
+  });
+
+  // Start
+  loadWord(0);
+</script>
+</body>
+</html>

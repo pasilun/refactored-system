@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dinosaur Image Search</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 3rem 1rem 2rem;
+            background: linear-gradient(135deg, #16213e, #0f3460);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #4ecca3, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: #888;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-container {
+            display: flex;
+            max-width: 600px;
+            margin: 0 auto;
+            gap: 0.5rem;
+        }
+
+        .search-container input {
+            flex: 1;
+            padding: 0.9rem 1.2rem;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: #16213e;
+            color: #eee;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-container input:focus {
+            border-color: #4ecca3;
+        }
+
+        .search-container button {
+            padding: 0.9rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: #4ecca3;
+            color: #1a1a2e;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .search-container button:hover {
+            background: #45b7d1;
+        }
+
+        .source-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .source-tabs label {
+            cursor: pointer;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            background: #16213e;
+            border: 1px solid #333;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .source-tabs input[type="checkbox"] {
+            margin-right: 0.3rem;
+        }
+
+        .source-tabs label:hover {
+            border-color: #4ecca3;
+        }
+
+        .status {
+            text-align: center;
+            padding: 1rem;
+            color: #888;
+        }
+
+        .results {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .image-card {
+            border-radius: 8px;
+            overflow: hidden;
+            background: #16213e;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .image-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(78, 204, 163, 0.2);
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .image-card .info {
+            padding: 0.7rem;
+        }
+
+        .image-card .info h3 {
+            font-size: 0.8rem;
+            color: #ccc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .image-card .info .source {
+            font-size: 0.7rem;
+            color: #4ecca3;
+            margin-top: 0.3rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
+
+        .modal .close {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 2rem;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #333;
+            border-top-color: #4ecca3;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Image Search</h1>
+        <p>Search for images across public sources</p>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search for images... (e.g. dinosaur)" value="dinosaur">
+            <button onclick="search()">Search</button>
+        </div>
+        <div class="source-tabs">
+            <label><input type="checkbox" id="srcWikimedia" checked> Wikimedia Commons</label>
+            <label><input type="checkbox" id="srcPixabay" checked> Pixabay</label>
+        </div>
+    </header>
+
+    <div id="status" class="status"></div>
+    <div id="results" class="results"></div>
+
+    <div id="modal" class="modal" onclick="closeModal()">
+        <span class="close">&times;</span>
+        <img id="modalImg" src="" alt="">
+    </div>
+
+    <script>
+        const PIXABAY_API_KEY = '47066065-8882af729b4c039f9f4fa87c3';
+
+        document.getElementById('searchInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') search();
+        });
+
+        async function search() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+
+            const results = document.getElementById('results');
+            const status = document.getElementById('status');
+            results.innerHTML = '';
+            status.innerHTML = '<div class="loading"><div class="spinner"></div><p>Searching...</p></div>';
+
+            const useWikimedia = document.getElementById('srcWikimedia').checked;
+            const usePixabay = document.getElementById('srcPixabay').checked;
+
+            const promises = [];
+            if (useWikimedia) promises.push(searchWikimedia(query));
+            if (usePixabay) promises.push(searchPixabay(query));
+
+            if (promises.length === 0) {
+                status.textContent = 'Select at least one source.';
+                return;
+            }
+
+            try {
+                const allResults = await Promise.all(promises);
+                const images = allResults.flat();
+
+                if (images.length === 0) {
+                    status.textContent = 'No images found. Try a different search term.';
+                    return;
+                }
+
+                status.textContent = `Found ${images.length} images`;
+                images.sort(() => Math.random() - 0.5);
+                renderImages(images);
+            } catch (err) {
+                status.textContent = 'Error fetching images: ' + err.message;
+            }
+        }
+
+        async function searchWikimedia(query) {
+            const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(query)}&gsrlimit=30&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=400&format=json&origin=*`;
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (!data.query || !data.query.pages) return [];
+
+            return Object.values(data.query.pages)
+                .filter(page => page.imageinfo && page.imageinfo[0].thumburl)
+                .map(page => ({
+                    thumb: page.imageinfo[0].thumburl,
+                    full: page.imageinfo[0].url,
+                    title: page.title.replace('File:', '').replace(/\.[^.]+$/, ''),
+                    source: 'Wikimedia Commons'
+                }));
+        }
+
+        async function searchPixabay(query) {
+            const url = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=30`;
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (!data.hits) return [];
+
+            return data.hits.map(hit => ({
+                thumb: hit.webformatURL,
+                full: hit.largeImageURL,
+                title: hit.tags,
+                source: 'Pixabay'
+            }));
+        }
+
+        function renderImages(images) {
+            const results = document.getElementById('results');
+            results.innerHTML = images.map(img => `
+                <div class="image-card" onclick="openModal('${img.full}')">
+                    <img src="${img.thumb}" alt="${img.title}" loading="lazy">
+                    <div class="info">
+                        <h3>${img.title}</h3>
+                        <div class="source">${img.source}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openModal(url) {
+            document.getElementById('modalImg').src = url;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Auto-search on load
+        search();
+    </script>
+</body>
+</html>
